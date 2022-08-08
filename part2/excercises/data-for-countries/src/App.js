@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 const App = () => {
+  const WEATHER_API_KEY = process.env.REACT_APP_API_KEY;
+
   const [countryName, setCountryName] = useState("");
   const [countryData, setCountriesData] = useState(null);
   const [filteredCountries, setFilteredCountries] = useState([]);
+  const [chosenCountry, setChosenCountry] = useState(null);
+  const [showToManyMatches, setShowToManyMatches] = useState(false);
+  const [temperature, setTemparature] = useState(null);
   const hook = () => {
     axios.get("https://restcountries.com/v3.1/all").then((response) => {
       let arr = [],
@@ -12,9 +17,10 @@ const App = () => {
         obj = {
           name: element.name.official,
           capital: element.capital,
-          languages:element.languages && Object.values(element.languages),
+          languages: element.languages && Object.values(element.languages),
           flag: element.flags.png,
           area: element.area,
+          capitalLatLong: element.capitalInfo.latlng,
         };
         arr.push(obj);
       });
@@ -22,17 +28,46 @@ const App = () => {
     });
   };
   const handleCountryNameChange = (e) => {
+    setChosenCountry(null);
     setCountryName(e.target.value.toLowerCase());
     let NFilteredCountries = countryData.filter((country) =>
       country.name.toLowerCase().includes(e.target.value)
     );
     if (NFilteredCountries.length < 10) {
       setFilteredCountries(NFilteredCountries);
+      if (filteredCountries.length === 1) {
+        setChosenCountry(filteredCountries[0]);
+        handleWeatherData(filteredCountries[0].capitalLatLong);
+      }
+      setShowToManyMatches(false);
     } else {
+      setShowToManyMatches(true);
       setFilteredCountries([]);
+      setChosenCountry(null);
     }
   };
 
+  const handleWeatherData = (capitalInfo) => {
+    const lat = capitalInfo[0];
+    const long = capitalInfo[1];
+    axios
+      .get(
+        `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${long}&exclude=hourly,daily&APPID=${WEATHER_API_KEY}`
+      )
+      .then((response) => {
+        response = response.data;
+        const temp = response.current.temp - 273.15;
+        const icon = `https://openweathermap.org/img/wn/${response.current.weather[0].icon}@2x.png`;
+        setTemparature({ temp: temp, icon: icon });
+      });
+  };
+
+  const handleChosenCountry = (e, country) => {
+    setChosenCountry(country);
+    handleWeatherData(country.capitalLatLong);
+    setFilteredCountries([]);
+    setCountryName("");
+  };
   useEffect(hook, []);
   return (
     <>
@@ -43,24 +78,51 @@ const App = () => {
         type="text"
       ></input>
       <div>
-        {filteredCountries==0 || filteredCountries.length > 10 ? <p>more input needed</p> : ""}
-        {filteredCountries.length !== 1 && filteredCountries.map((e) => (
-          <p key={e.name}>{e.name}</p>
-        ))}
-        {filteredCountries.length === 1
-          ? filteredCountries.map((e) => {
-              return (
-                <>
-                  <h3>{e.name}</h3>
-                  capital {e.capital}<br/>
-                  area:{e.area}<br/>
-                  languages:
-                  {e.languages.map(e=><p>{e}</p>)}<br/>
-                  <img alt="flag" src={e.flag}></img>
-                </>
-              );
-            })
-          : ""}
+        {showToManyMatches && countryName !== "" ? (
+          <p>Too many matches,specify another filter</p>
+        ) : (
+          ""
+        )}
+        {filteredCountries.length !== 1 &&
+          filteredCountries.map((e) => {
+            return (
+              <div key={e.name}>
+                <p>{e.name}</p>
+                <button
+                  onClick={(event) => {
+                    handleChosenCountry(event, e);
+                  }}
+                >
+                  show
+                </button>
+              </div>
+            );
+          })}
+        {chosenCountry && (
+          <div key={chosenCountry.name}>
+            <h3>{chosenCountry.name}</h3>
+            capital {chosenCountry.capital}
+            <br />
+            area:{chosenCountry.area}
+            <br />
+            <p>
+              <b>languages:</b>
+            </p>
+            <ul>
+              {chosenCountry.languages.map((e) => (
+                <li key={e}>{e}</li>
+              ))}
+            </ul>
+            <img alt="flag" src={chosenCountry.flag}></img>
+            {temperature && (
+              <>
+                <h3>Weather in {chosenCountry.name}</h3>
+                <p>temperature {temperature.temp}</p>
+                <img alt="icon" src={temperature.icon}></img>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </>
   );
