@@ -1,30 +1,47 @@
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import ShowPersons from "./components/ShowPersons";
 import PersonForm from "./components/PersonForm";
 import Filter from "./components/Filter";
-import axios from "axios"
+import axios from "axios";
+import contactService from "./services/contacts";
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [filterPersons, setFilterPersons] = useState([]);
   const [filterText, setFilterText] = useState("");
   const [newPerson, setNewPerson] = useState({ name: "", number: "" });
-
-  useEffect(()=>{
-    axios.get('http://localhost:3001/persons')
-    .then(response=>{
-      setPersons(response.data)
-    })
-  },[])
+  useEffect(() => {
+    contactService.getAll().then((contacts) => setPersons(contacts));
+  }, []);
   const addPerson = (e) => {
-    const personExists = persons.some(
-      (person) =>
-        person.name === newPerson.name
-    );
-    if (personExists) {
-      alert(`${newPerson.name} already exists`);
-    } else setPersons(persons.concat(newPerson));
-    setNewPerson({ name: "", number: "" });
     e.preventDefault();
+    let personExists = persons.filter(
+      (person) => person.name === newPerson.name
+    );
+    personExists = personExists.length === 1 ? personExists[0] : null;
+    if (personExists && personExists.number === newPerson.number) {
+      alert(`${newPerson.name} already exists`);
+    } else if (personExists && personExists.number !== newPerson.number) {
+      const isUpdate = window.confirm(
+        `${personExists.name} already exists,replace the old number with new one`
+      );
+      if (isUpdate) {
+        const updatedPerson = { ...personExists, number: newPerson.number };
+        contactService
+          .updatePerson(updatedPerson.id, updatedPerson)
+          .then(
+            setPersons(
+              persons.map((persone) =>
+                persone.id === updatedPerson.id ? updatedPerson : persone
+              )
+            )
+          );
+      }
+    } else {
+      contactService
+        .addNewPerson(newPerson)
+        .then((returnedPerson) => setPersons(persons.concat(returnedPerson)));
+    }
+    setNewPerson({ name: "", number: "" });
   };
 
   const handleFilterChange = (e) => {
@@ -39,6 +56,12 @@ const App = () => {
   const onNameChange = (e) =>
     setNewPerson({ name: e.target.value, number: newPerson.number });
 
+  const deletePerson = (id) => {
+    contactService
+      .deletePerson(id)
+      .then(setPersons(persons.filter((person) => person.id !== id)));
+  };
+
   const onNumberChange = (e) =>
     setNewPerson({ name: newPerson.name, number: e.target.value });
 
@@ -48,7 +71,7 @@ const App = () => {
       filter with shown:
       <Filter
         filterText={filterText}
-        handleFilterChange={handleFilterChange  }
+        handleFilterChange={handleFilterChange}
       ></Filter>
       <h2>add a new</h2>
       <PersonForm
@@ -59,8 +82,18 @@ const App = () => {
         number={newPerson.number}
       ></PersonForm>
       <h2>Numbers</h2>
-      {filterText === "" && <ShowPersons filterPersons={persons}></ShowPersons>}
-      {filterText !== "" && <ShowPersons filterPersons={filterPersons}></ShowPersons>}
+      {filterText === "" && (
+        <ShowPersons
+          filterPersons={persons}
+          deletePerson={deletePerson}
+        ></ShowPersons>
+      )}
+      {filterText !== "" && (
+        <ShowPersons
+          filterPersons={filterPersons}
+          deletePerson={deletePerson}
+        ></ShowPersons>
+      )}
     </div>
   );
 };

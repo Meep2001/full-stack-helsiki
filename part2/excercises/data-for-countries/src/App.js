@@ -34,11 +34,13 @@ const App = () => {
       country.name.toLowerCase().includes(e.target.value)
     );
     if (NFilteredCountries.length < 10) {
-      setFilteredCountries(NFilteredCountries);
-      if (filteredCountries.length === 1) {
-        setChosenCountry(filteredCountries[0]);
-        handleWeatherData(filteredCountries[0].capitalLatLong);
+     
+      if (NFilteredCountries.length === 1) {
+        handleWeatherData(NFilteredCountries[0].capitalLatLong);
+        setChosenCountry(NFilteredCountries[0]);
+        
       }
+      setFilteredCountries(NFilteredCountries);
       setShowToManyMatches(false);
     } else {
       setShowToManyMatches(true);
@@ -56,9 +58,10 @@ const App = () => {
       )
       .then((response) => {
         response = response.data;
-        const temp = response.current.temp - 273.15;
+        const temp = Math.floor(response.current.temp - 273.15);
         const icon = `https://openweathermap.org/img/wn/${response.current.weather[0].icon}@2x.png`;
-        setTemparature({ temp: temp, icon: icon });
+        const wind= response.current.wind_speed;
+        setTemparature({ temp: temp, icon: icon,wind :wind});
       });
   };
 
@@ -117,8 +120,9 @@ const App = () => {
             {temperature && (
               <>
                 <h3>Weather in {chosenCountry.name}</h3>
-                <p>temperature {temperature.temp}</p>
+                <p>temperature {temperature.temp} celsius</p>
                 <img alt="icon" src={temperature.icon}></img>
+                <p>wind {temperature.wind} m/s</p>
               </>
             )}
           </div>
