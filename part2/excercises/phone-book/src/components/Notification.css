@@ -1,0 +1,12 @@
+#message{
+    width: fit-content;
+    background-color: black;
+    opacity: 0.25;
+}
+
+ .error{
+    color:red;
+}
+.n{
+    color:green
+}

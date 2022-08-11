@@ -4,11 +4,13 @@ import PersonForm from "./components/PersonForm";
 import Filter from "./components/Filter";
 import axios from "axios";
 import contactService from "./services/contacts";
+import { Notification } from "./components/Notification";
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [filterPersons, setFilterPersons] = useState([]);
   const [filterText, setFilterText] = useState("");
   const [newPerson, setNewPerson] = useState({ name: "", number: "" });
+  const [message, setMessage] = useState({ messageN: null, error: false });
   useEffect(() => {
     contactService.getAll().then((contacts) => setPersons(contacts));
   }, []);
@@ -28,18 +30,28 @@ const App = () => {
         const updatedPerson = { ...personExists, number: newPerson.number };
         contactService
           .updatePerson(updatedPerson.id, updatedPerson)
-          .then(
+          .then((uPerson) => {
             setPersons(
               persons.map((persone) =>
-                persone.id === updatedPerson.id ? updatedPerson : persone
+                persone.id === updatedPerson.id ? uPerson : persone
               )
-            )
-          );
+            );
+            setMessage({
+              messageN: "Updated number successfully",
+              error: "false",
+            });
+            setTimeout(() => setMessage({ messageN: null, error: null }), 5000);
+          });
       }
     } else {
-      contactService
-        .addNewPerson(newPerson)
-        .then((returnedPerson) => setPersons(persons.concat(returnedPerson)));
+      contactService.addNewPerson(newPerson).then((returnedPerson) => {
+        setPersons(persons.concat(returnedPerson));
+        setMessage({
+          messageN: "successfully added new person",
+          error: "false",
+        });
+       setTimeout(() => setMessage({ messageN: null, error: null }), 5000);
+      });
     }
     setNewPerson({ name: "", number: "" });
   };
@@ -59,7 +71,16 @@ const App = () => {
   const deletePerson = (id) => {
     contactService
       .deletePerson(id)
-      .then(setPersons(persons.filter((person) => person.id !== id)));
+      .then(() => {
+        setPersons(persons.filter((person) => person.id !== id));
+
+        setMessage({ messageN: "deletion successful", error: "false" });
+        setTimeout(() => setMessage({ messageN: null, error: false }), 5000);
+      })
+      .catch((error) => {
+        setMessage({ messageN: "person already deleted", error: "true" });
+        setTimeout(() => setMessage({ messageN: null, error: false }), 5000);
+      });
   };
 
   const onNumberChange = (e) =>
@@ -68,6 +89,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification messageN={message.messageN} error={message.error}></Notification>
       filter with shown:
       <Filter
         filterText={filterText}
