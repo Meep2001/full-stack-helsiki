@@ -68,7 +68,15 @@ const generateId = () => {
 
 const express = require("express");
 const app = express();
+const requestLogger = (request, response, next) => {
+  console.log("Method:", request.method);
+  console.log("Path:", request.path);
+  console.log("Body:", request.body);
+  console.log("----");
+  next();
+};
 app.use(express.json());
+app.use(requestLogger);
 
 app.get("/", (request, response) => {
   response.send("<h2>Hello world</h2>");
@@ -95,21 +103,25 @@ app.delete("/api/notes/:id", (request, response) => {
 app.post("/api/notes", (request, response) => {
   const body = request.body;
   if (!body.content) {
-   return response.status(400).end({
+    return response.status(400).end({
       error: "content is empty",
     });
   }
 
-  const note={
-    id:generateId(),
-    date:new Date(),
+  const note = {
+    id: generateId(),
+    date: new Date(),
     important: body.important || false,
-    content:body.content
-  }
-  notes=notes.concat(note)
-  response.json(note)
+    content: body.content,
+  };
+  notes = notes.concat(note);
+  response.json(note);
 });
 
+const unknownEndpoint=(request,response)=>{
+  response.status(404).send({error:`Cannot find ${request.path}`})
+}
+app.use(unknownEndpoint)
 const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`listening at PORT ${PORT}`);

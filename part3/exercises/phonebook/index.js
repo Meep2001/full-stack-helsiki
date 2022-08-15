@@ -42,8 +42,15 @@ let persons = [
 const gernerateId = () => {
   return Math.floor(Math.random() * 1000 + 1) % 1001;
 };
+const morgan = require("morgan");
 const app = express();
 app.use(express.json());
+morgan.token("log", function ss(req, res) {
+  if (req.method === "POST" )
+    return `{ name:${req.body.name},number:${req.body.number}}`;
+  return "";
+});
+app.use(morgan(":method :url :status :response-time :log"));
 app.get("/", (request, response) => {
   response.send("<h3>HELLO</h3>");
 });
@@ -81,7 +88,7 @@ app.post("/api/persons", (request, response) => {
     id: gernerateId(),
   };
   persons = persons.concat(person);
-  response.json(person)
+  response.json(person);
 });
 const PORT = 3001;
 app.listen(PORT, () => {
