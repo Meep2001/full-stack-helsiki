@@ -66,8 +66,9 @@ const generateId = () => {
   return maxId + 1;
 };
 
+const Note = require("./models/note");
 const express = require("express");
-const cors=require("cors");
+const cors = require("cors");
 const app = express();
 const requestLogger = (request, response, next) => {
   console.log("Method:", request.method);
@@ -76,7 +77,7 @@ const requestLogger = (request, response, next) => {
   console.log("----");
   next();
 };
-app.use(cors())
+app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
 
@@ -84,16 +85,12 @@ app.get("/", (request, response) => {
   response.send("<h2>Hello world</h2>");
 });
 app.get("/api/notes", (request, response) => {
-  response.json(notes);
+  Note.find({}).then((result) => response.json(result));
 });
 
 app.get("/api/notes/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const note = notes.find((note) => {
-    return note.id === id;
-  });
-  if (note) response.json(note);
-  else response.status(404).end("Note doesnot exist");
+  const id = request.params.id;
+  Note.findById(id).then((result) => response.json(result));
 });
 
 app.delete("/api/notes/:id", (request, response) => {
@@ -110,20 +107,18 @@ app.post("/api/notes", (request, response) => {
     });
   }
 
-  const note = {
-    id: generateId(),
+  const note = new Note({
     date: new Date(),
     important: body.important || false,
     content: body.content,
-  };
-  notes = notes.concat(note);
-  response.json(note);
+  });
+  note.save().then((result) => response.json(result));
 });
 
-const unknownEndpoint=(request,response)=>{
-  response.status(404).send({error:`Cannot find ${request.path}`})
-}
-app.use(unknownEndpoint)
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: `Cannot find ${request.path}` });
+};
+app.use(unknownEndpoint);
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`listening at PORT ${PORT}`);

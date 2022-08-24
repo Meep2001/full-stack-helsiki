@@ -1,7 +1,7 @@
 const { request, response } = require("express");
 const express = require("express");
 
-let persons = [
+let personsArray = [
   {
     name: "Arto Hellas",
     number: "040-123456",
@@ -42,11 +42,12 @@ let persons = [
 const gernerateId = () => {
   return Math.floor(Math.random() * 1000 + 1) % 1001;
 };
+const Contact = require("./models/contact");
 const morgan = require("morgan");
 const app = express();
 app.use(express.json());
 morgan.token("log", function ss(req, res) {
-  if (req.method === "POST" )
+  if (req.method === "POST")
     return `{ name:${req.body.name},number:${req.body.number}}`;
   return "";
 });
@@ -55,21 +56,20 @@ app.get("/", (request, response) => {
   response.send("<h3>HELLO</h3>");
 });
 app.get("/api/persons", (request, response) => {
-  response.json(persons);
+  Contact.find({}).then((persons) => {
+    response.json(persons);
+    personsArray = persons;
+  });
 });
 
 app.get("/api/info", (request, response) => {
-  response.send(`<h4>Phone book has info ${persons.length} people</h4>
+  response.send(`<h4>Phone book has info ${personsArray.length} people</h4>
     <p>${new Date().toString()}</p>`);
 });
 
 app.get("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  const person = persons.find((person) => person.id === id);
-  if (!person) {
-    return response.status(404).end("Person not found");
-  }
-  response.json(person);
+  const id = request.params.id;
+  Contact.findById(id).then((result) => response.json(result));
 });
 
 app.delete("/api/persons/:id", (request, response) => {
@@ -82,13 +82,12 @@ app.post("/api/persons", (request, response) => {
   const body = request.body;
   if (!body.number || !body.name)
     return response.status(400).end("number or name is empty");
-  const person = {
+  const person = new Contact({
     name: body.name,
     number: body.number,
     id: gernerateId(),
-  };
-  persons = persons.concat(person);
-  response.json(person);
+  });
+  person.save().then((result) => response.json(result));
 });
 const PORT = 3001;
 app.listen(PORT, () => {
