@@ -44,6 +44,7 @@ const gernerateId = () => {
 };
 const Contact = require("./models/contact");
 const morgan = require("morgan");
+const note = require("../../part3-prac/models/note");
 const app = express();
 app.use(express.json());
 morgan.token("log", function ss(req, res) {
@@ -57,8 +58,8 @@ app.get("/", (request, response) => {
 });
 app.get("/api/persons", (request, response) => {
   Contact.find({}).then((persons) => {
-    response.json(persons);
     personsArray = persons;
+    response.json(persons);
   });
 });
 
@@ -67,15 +68,25 @@ app.get("/api/info", (request, response) => {
     <p>${new Date().toString()}</p>`);
 });
 
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/persons/:id", (request, response,next) => {
   const id = request.params.id;
-  Contact.findById(id).then((result) => response.json(result));
+  Contact.findById(id)
+    .then((result) => response.json(result))
+    .catch((error) => {
+      console.log(error.name)
+      next(error);
+    });
 });
 
 app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.paramsid);
-  persons = persons.map((person) => person.id !== id);
-  response.status(204).end();
+  const id = request.params.id;
+  Contact.findByIdAndRemove(id)
+    .then((contact) => {
+      response.status(204).end();
+    })
+    .catch((error) => {
+      next(error);
+    });
 });
 
 app.post("/api/persons", (request, response) => {
@@ -85,10 +96,32 @@ app.post("/api/persons", (request, response) => {
   const person = new Contact({
     name: body.name,
     number: body.number,
-    id: gernerateId(),
   });
   person.save().then((result) => response.json(result));
 });
+
+app.put("/api/persons/:id", (request, response) => {
+  const id = request.params.id;
+  const body = request.body;
+  const contact = {
+    name: body.name,
+    number: body.number,
+  };
+  Contact.findByIdAndUpdate(id, contact, { new: true })
+    .then((updatedContact) => {
+      response.json(updatedContact);
+    })
+    .catch((error) => next(error));
+});
+
+const errorHandler = (error, request, response, next) => {
+  console.log('error handler',error.name);
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformed id" });
+  }
+  next(error);
+};
+app.use(errorHandler);
 const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Listening at PORT ${PORT}`);

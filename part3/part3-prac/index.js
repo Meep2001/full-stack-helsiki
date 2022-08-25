@@ -88,15 +88,23 @@ app.get("/api/notes", (request, response) => {
   Note.find({}).then((result) => response.json(result));
 });
 
-app.get("/api/notes/:id", (request, response) => {
+app.get("/api/notes/:id", (request, response, next) => {
   const id = request.params.id;
-  Note.findById(id).then((result) => response.json(result));
+  Note.findById(id)
+    .then((note) => {
+      if (note) response.json(note);
+      else response.status(400).end();
+    })
+    .catch((error) => next(error));
 });
 
 app.delete("/api/notes/:id", (request, response) => {
-  const id = Number(request.params.id);
-  notes = notes.filter((note) => note.id !== id);
-  response.status(204).end();
+  const id = request.params.id;
+  Note.findByIdAndRemove(id)
+    .then((result) => {
+      response.status(204).end();
+    })
+    .catch((error) => next(error));
 });
 
 app.post("/api/notes", (request, response) => {
@@ -115,10 +123,34 @@ app.post("/api/notes", (request, response) => {
   note.save().then((result) => response.json(result));
 });
 
+app.put("/api/notes/:id", (request, response) => {
+  const body = response.body;
+  const note = {
+    content: body.content,
+    important: body.important,
+  };
+  const id = request.params.id;
+  Note.findOneAndUpdate(id, note, { new: true })
+    .then((updatedNote) => {
+      response.json(updatedNote);
+    })
+    .catch((error) => next(error));
+});
+
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message);
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformed id" });
+  }
+  next(error);
+};
+
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: `Cannot find ${request.path}` });
 };
 app.use(unknownEndpoint);
+app.use(errorHandler);
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`listening at PORT ${PORT}`);
