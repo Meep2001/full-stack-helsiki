@@ -68,12 +68,12 @@ app.get("/api/info", (request, response) => {
     <p>${new Date().toString()}</p>`);
 });
 
-app.get("/api/persons/:id", (request, response,next) => {
+app.get("/api/persons/:id", (request, response, next) => {
   const id = request.params.id;
   Contact.findById(id)
     .then((result) => response.json(result))
     .catch((error) => {
-      console.log(error.name)
+      console.log(error.name);
       next(error);
     });
 });
@@ -97,7 +97,10 @@ app.post("/api/persons", (request, response) => {
     name: body.name,
     number: body.number,
   });
-  person.save().then((result) => response.json(result));
+  person
+    .save()
+    .then((result) => response.json(result))
+    .catch((error) => next(error));
 });
 
 app.put("/api/persons/:id", (request, response) => {
@@ -107,7 +110,11 @@ app.put("/api/persons/:id", (request, response) => {
     name: body.name,
     number: body.number,
   };
-  Contact.findByIdAndUpdate(id, contact, { new: true })
+  Contact.findByIdAndUpdate(id, contact, {
+    new: true,
+    runValidators: true,
+    context: "query",
+  })
     .then((updatedContact) => {
       response.json(updatedContact);
     })
@@ -115,9 +122,11 @@ app.put("/api/persons/:id", (request, response) => {
 });
 
 const errorHandler = (error, request, response, next) => {
-  console.log('error handler',error.name);
+  console.log("error handler", error.name);
   if (error.name === "CastError") {
     return response.status(400).send({ error: "malformed id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).send({ error: error.message });
   }
   next(error);
 };

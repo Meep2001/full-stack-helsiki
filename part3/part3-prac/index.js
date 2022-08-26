@@ -120,7 +120,10 @@ app.post("/api/notes", (request, response) => {
     important: body.important || false,
     content: body.content,
   });
-  note.save().then((result) => response.json(result));
+  note
+    .save()
+    .then((result) => response.json(result))
+    .catch((error) => next(error));
 });
 
 app.put("/api/notes/:id", (request, response) => {
@@ -130,7 +133,11 @@ app.put("/api/notes/:id", (request, response) => {
     important: body.important,
   };
   const id = request.params.id;
-  Note.findOneAndUpdate(id, note, { new: true })
+  Note.findOneAndUpdate(id, note, {
+    new: true,
+    runValidators: true,
+    context: "query",
+  })
     .then((updatedNote) => {
       response.json(updatedNote);
     })
@@ -141,6 +148,8 @@ const errorHandler = (error, request, response, next) => {
   console.log(error.message);
   if (error.name === "CastError") {
     return response.status(400).send({ error: "malformed id" });
+  } else if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message });
   }
   next(error);
 };
