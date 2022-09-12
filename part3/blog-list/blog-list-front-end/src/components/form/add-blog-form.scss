@@ -1,0 +1,21 @@
+form{
+    margin:2rem;
+    padding: 2rem;
+    border:0.1rem solid black;
+    width: fit-content;
+    label {
+        display: block;
+    }
+    input{
+        margin:1rem 1rem;
+        font-family: cursive;
+    }
+    font-family: cursive;
+    button{
+        font-family: cursive;
+        border:none;
+        width: 3rem;
+        height: 1.5rem;
+        margin: 2rem 2rem;
+    }
+}
