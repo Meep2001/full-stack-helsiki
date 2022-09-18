@@ -1,8 +1,8 @@
 import { useState } from "react";
-import blogService from "../services/blogs";
+import blogService from "../../services/blogs";
 import "./add-blog-form.scss";
 
-export function AddBlogForm() {
+export function AddBlogForm({ setBlogs, blogs }) {
   const [author, setAuthor] = useState("");
   const [title, setTitle] = useState("");
   const [blogUrl, setBlogUrl] = useState("");
@@ -10,8 +10,19 @@ export function AddBlogForm() {
 
   const handleAddBlog = (e) => {
     e.preventDefault();
-    blogService.createBlog({}).then((response) => console.log(response))
-    .catch(error=>console.log(error));
+    const newBlog = { author, title, blogUrl, votes };
+    blogService
+      .createBlog(newBlog)
+      .then((response) => {
+        console.log(response);
+        setBlogs(blogs.concat(newBlog));
+        setAuthor('')
+        setTitle('')
+        setBlogUrl('')
+        setVotes(0)
+        
+      })
+      .catch((error) => console.log(error));
   };
   return (
     <form>
