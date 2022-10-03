@@ -1,6 +1,6 @@
 const average=require('../utils/for_testing').average
 
-describe('averaga',() => {
+describe('average',() => {
   test('of one value itself',() => {
     const result=average([1])
     expect(result).toBe(1)
