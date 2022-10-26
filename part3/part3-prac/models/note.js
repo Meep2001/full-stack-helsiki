@@ -3,18 +3,26 @@ const config=require('../utils/config')
 const logger=require('../utils/logger')
 const mongoose = require('mongoose')
 
-const url = config.MONGODB_URI
+// const url = config.MONGODB_URI
 
-logger.info('connecting to ', url)
+// logger.info('connecting to ', url)
 
-mongoose
-  .connect(url)
-  .then((result) => {
-    logger.info('Connected to mongoDB')
-  })
-  .catch((error) => {
-    logger.error('error occured while connecting :', error.message)
-  })
+// const connectToMongoose=async () => {
+//   console.log("IN MONGOOSE CONNECT")
+
+//   try {
+//     console.log('before try')
+//     await mongoose.connect(url)
+//     logger.info('Connected to MongoDB')
+//     console.log('in try')
+//   }
+//   catch(error)
+//   {
+//     logger.error('error occured while connecting :', error.message)
+//     process.exit(1)
+//   }
+// }
+// connectToMongoose()
 
 const noteSchema=new mongoose.Schema({
   content:{
@@ -26,7 +34,11 @@ const noteSchema=new mongoose.Schema({
     type:String,
     required:true
   },
-  important:Boolean
+  important:Boolean,
+  user: {
+    type:mongoose.Types.ObjectId,
+    ref:'User'
+  }
 })
 
 noteSchema.set('toJSON',{
